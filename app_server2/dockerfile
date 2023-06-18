@@ -1,0 +1,18 @@
+# Imagen base
+FROM node:14
+
+# Directorio de trabajo dentro del contenedor
+WORKDIR /app
+
+# Copiar los archivos de la aplicación
+COPY package.json package-lock.json ./
+COPY server.js ./
+
+# Instalar las dependencias
+RUN npm install
+
+# Puerto en el que la aplicación estará expuesta
+EXPOSE 8484
+
+# Comando para ejecutar la aplicación
+CMD ["node", "server.js"]
