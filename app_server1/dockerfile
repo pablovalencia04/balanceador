@@ -7,6 +7,7 @@ WORKDIR /app
 # Copiar los archivos de la aplicación
 COPY package.json package-lock.json ./
 COPY server.js ./
+COPY index.html ./
 
 # Instalar las dependencias
 RUN npm install
