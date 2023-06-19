@@ -30,5 +30,5 @@ networks:
   private_network:
     ipam:
       config:
-        - subnet: 192.168.100.0/24
-        - gateway: 192.168.100.254
+        - subnet: 10.0.0.0/24
+          gateway: 10.0.0.1
