@@ -12,7 +12,7 @@ COPY server.js ./
 RUN npm install
 
 # Puerto en el que la aplicación estará expuesta
-EXPOSE 8484
+EXPOSE 8000
 
 # Comando para ejecutar la aplicación
 CMD ["node", "server.js"]
