@@ -9,9 +9,7 @@ services:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
     networks:
       - private_network
-    depends_on:
-      - app_server1
-      - app_server2
+
 
   app_server1:
     build:
