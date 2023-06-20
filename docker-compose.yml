@@ -15,7 +15,7 @@ services:
     build:
       context: ./app_server1
     volumes:
-      - app_server_html:/usr/share/nginx/html
+      - app_server_html:/app/html
     networks:
       - private_network
     depends_on:
@@ -25,7 +25,7 @@ services:
     build:
       context: ./app_server2
     volumes:
-      - app_server_html:/usr/share/nginx/html
+      - app_server_html:/app/html
     networks:
       - private_network
     depends_on:

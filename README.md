@@ -25,26 +25,28 @@ services:
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
     networks:
-      private_network:
-        ipv4_address: 10.0.0.2
+      - private_network
+
 
   app_server1:
     build:
       context: ./app_server1
     volumes:
-      - ./html:/usr/share/nginx/html
+      - app_server_html:/app/html
     networks:
-      private_network:
-        ipv4_address: 10.0.0.3
+      - private_network
+    depends_on:
+      - load_balancer
 
   app_server2:
     build:
       context: ./app_server2
     volumes:
-      - ./html:/usr/share/nginx/html
+      - app_server_html:/app/html
     networks:
-      private_network:
-        ipv4_address: 10.0.0.4
+      - private_network
+    depends_on:
+      - load_balancer
 
 networks:
   private_network:
@@ -52,6 +54,10 @@ networks:
       config:
         - subnet: 10.0.0.0/24
           gateway: 10.0.0.1
+
+volumes:
+  app_server_html:
+    external: false
 ```
 
 ## Estructura del archivo dockerfile
@@ -66,11 +72,12 @@ El archivo Dockerfile se utiliza para construir una imagen de Docker que contien
 
 - `COPY server.js ./`: Esta línea copia el archivo server.js del directorio actual al directorio de trabajo dentro del contenedor (/app).
 
+- `COPY index.html ./html/`: Esta línea copia el archivo index.html del directorio actual al subdirectorio html dentro del directorio de trabajo dentro del contenedor (/app/html).
+
 - `RUN npm install`: Esta línea ejecuta el comando `npm install` dentro del contenedor para instalar las dependencias especificadas en el archivo package.json.
 
 - `EXPOSE 8000`: Esta línea expone el puerto 8000 del contenedor para que la aplicación esté accesible desde el exterior.
 
-- `CMD ["node", "server.js"]`: Esta línea establece el comando que se ejecutará cuando el contenedor se inicie. En este caso, se ejecutará el archivo server.js utilizando Node.js.
 
 ```dockerfile
 FROM node:14
@@ -79,6 +86,7 @@ WORKDIR /app
 
 COPY package.json package-lock.json ./
 COPY server.js ./
+COPY index.html ./html/
 
 RUN npm install
 
@@ -87,7 +95,7 @@ EXPOSE 8000
 CMD ["node", "server.js"]
 ```
 
-## Estructura del archivo
+## Estructura del archivo nginx.conf
 
 El archivo `nginx.conf` define la configuración de Nginx para actuar como un servidor proxy inverso y distribuir el tráfico entre los servidores de la aplicación.
 
@@ -125,37 +133,47 @@ http {
         location / {
             proxy_pass http://app_servers;
         }
+
+        location /index.html {
+            proxy_pass http://app_servers;
+        }
     }
 }
 ```
 
-## Estructura del archivo
+## Estructura del archivo server.js
 
 El archivo `server.js` contiene un código de ejemplo en Node.js que utiliza el framework Express para crear un servidor HTTP. A continuación se muestra cómo está estructurado el archivo y qué hace cada sección.
 
 ```javascript
 const express = require('express');
 const app = express();
+const path = require('path');
 
 app.get('/', (req, res) => {
-  res.send('¡Hola desde el servidor 1!');
+  res.sendFile(path.join(__dirname, 'html/index.html'));
+});
+
+app.get('/saludo', (req, res) => {
+  res.send('¡Hola desde el servidor 2!');
 });
 
 app.listen(8000, () => {
   console.log('El servidor 1 está funcionando en el puerto 8000.');
 });
+
 ```
 
 - `const express = require('express');`: Esta línea importa el módulo `express` para utilizar el framework Express en la aplicación.
 
 - `const app = express();`: Aquí se crea una instancia de la aplicación Express.
 
-- `app.get('/', (req, res) => { ... });`: Esta sección define una ruta GET para la ruta raíz `'/'`. Cuando se accede a esta ruta, se ejecuta la función de controlador proporcionada. En este caso, la función recibe objetos `req` y `res` que representan la solicitud y la respuesta, respectivamente. La función envía la respuesta `'¡Hola desde el servidor 1!'` al cliente.
+- `app.get('/saludo', (req, res) => { ... });`: Esta sección define una ruta GET para la ruta raíz `'/'`. Cuando se accede a esta ruta, se ejecuta la función de controlador proporcionada. En este caso, la función recibe objetos `req` y `res` que representan la solicitud y la respuesta, respectivamente. La función envía la respuesta `'¡Hola desde el servidor 1!'` al cliente.
 
 - `app.listen(8000, () => { ... });`: Esta línea inicia el servidor en el puerto 8000. Cuando el servidor se inicia correctamente, se ejecuta la función de devolución de llamada proporcionada, que imprime un mensaje en la consola indicando que el servidor 1 está funcionando en el puerto 8000.
 
-Este código muestra un servidor básico que responde con un mensaje de saludo cuando se accede a la ruta raíz `'/'`.
+Este código muestra un servidor básico que responde con un mensaje de saludo cuando se accede a la ruta raíz `'/saludo'`.
 
 ## Conclusión
 
-Este proyecto no ha finalizado, por ahora solo he conseguido que se visualice el resultado del archivo server.js, pero el index.html no se llega a ver desde el balanceador.
+Este proyecto combina 3 contenedores para hacer un balanceador de carga, si se abre la ruta '/' se visualizará el html compartido en el volumen, y si se abre /saludo, aparecerá un mensaje con el servidor del que provenga el archivo.
